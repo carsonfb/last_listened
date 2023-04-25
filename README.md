@@ -17,7 +17,7 @@ below).
 
 The below image is updated every 5 minutes.
 
-[!image of an example output from Last Listened](https://carson.ballweb.org/images/last_listened.png)
+![image of an example output from Last Listened](https://carson.ballweb.org/images/last_listened.png)
 
 Configuration
 -------------
