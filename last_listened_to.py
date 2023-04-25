@@ -6,9 +6,9 @@
 """
 
 import json
-import requests
 import importlib
 from io import BytesIO
+import requests
 from PIL import Image, ImageDraw, ImageFont
 
 class LastListened:
@@ -55,14 +55,14 @@ class LastListened:
     def __get_plugin(self):
         """ This method sets up the appropriate plugin. """
 
-        TrackPlugin = getattr(
+        track_plugin = getattr(
             importlib.import_module(
                 '.'.join(['plugins', self.plugin_name])
             ),
             'TrackPlugin'
         )
 
-        plugin = TrackPlugin(self.plugins[self.plugin_name])
+        plugin = track_plugin(self.plugins[self.plugin_name])
         plugin.get_tracks()
 
         self.tracks = plugin.tracks
