@@ -7,11 +7,14 @@
     2. A get_tracks method that returns an list of dictionaries containing:
        a. artist: The artist name
        b. track: The track name
-       c. cover: The url of the album cover
+       c. when: How long ago the track was listened to
+       d. cover: The url of the album cover
 
     3. The class must be named TrackPlugin.
 """
 
+import time
+from datetime import datetime
 import pylast
 
 class TrackPlugin:
@@ -51,7 +54,8 @@ class TrackPlugin:
                 {
                     'artist': track.track.artist.name,
                     'track': track.track.title,
-                    'cover': album_cover
+                    'cover': album_cover,
+                    'when': self.__get_days(track)
                 }
             )
 
@@ -69,3 +73,28 @@ class TrackPlugin:
             pass
 
         return album_cover
+
+    def __get_days(self, track):
+        """ This method generates the human readable time the track was listened to. """
+
+        # Convert the listened timestamp to a datetime object.
+        listened = datetime.fromtimestamp(int(track.timestamp))
+
+        # Convert the current timestamp to a datetime object.
+        now = datetime.fromtimestamp(time.time())
+
+        # Get the number of seconds between now and when the track was listened to.
+        time_diff = now - listened
+        seconds = time_diff.total_seconds()
+
+        if seconds // 3600 < 1:
+            # This is less than an hour ago.
+            return 'Just now'
+        elif seconds // 3600 < 24:
+            # This is less than a day ago.
+            return ' '.join([str(int(seconds // 3600)), 'hours ago'])
+        elif 48 > (seconds // 3600) > 23:
+            return '1 day ago'
+        else:
+            # This is at least a day ago.
+            return ' '.join([str(int(seconds // 3600 // 24)), 'days ago'])
