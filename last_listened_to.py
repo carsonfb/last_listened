@@ -153,6 +153,17 @@ class LastListened:
             font=self.sub_font
         )
 
+        # Calculate the right-align position for the last listened time.
+        right = self.image['width'] - self.sub_font.getmask(track['when']).getbbox()[2] - 5
+
+        # Write the last listened time to the image.
+        draw.text(
+            (right, row_y),
+            track['when'],
+            fill=self.image['sub_font']['color'],
+            font=self.sub_font
+        )
+
         # Calculate the padding before the start of the next track.
         row_y += 50 - padding
 

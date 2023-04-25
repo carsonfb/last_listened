@@ -55,7 +55,7 @@ class TrackPlugin:
                     'artist': track.track.artist.name,
                     'track': track.track.title,
                     'cover': album_cover,
-                    'when': self.__get_days(track)
+                    'when': get_days(track)
                 }
             )
 
@@ -74,27 +74,31 @@ class TrackPlugin:
 
         return album_cover
 
-    def __get_days(self, track):
-        """ This method generates the human readable time the track was listened to. """
+def get_days(track):
+    """ This function generates the human readable time the track was listened to. """
 
-        # Convert the listened timestamp to a datetime object.
-        listened = datetime.fromtimestamp(int(track.timestamp))
+    # Convert the listened timestamp to a datetime object.
+    listened = datetime.fromtimestamp(int(track.timestamp))
 
-        # Convert the current timestamp to a datetime object.
-        now = datetime.fromtimestamp(time.time())
+    # Convert the current timestamp to a datetime object.
+    now = datetime.fromtimestamp(time.time())
 
-        # Get the number of seconds between now and when the track was listened to.
-        time_diff = now - listened
-        seconds = time_diff.total_seconds()
+    # Get the number of seconds between now and when the track was listened to.
+    time_diff = now - listened
+    seconds = time_diff.total_seconds()
 
-        if seconds // 3600 < 1:
-            # This is less than an hour ago.
-            return 'Just now'
-        elif seconds // 3600 < 24:
-            # This is less than a day ago.
-            return ' '.join([str(int(seconds // 3600)), 'hours ago'])
-        elif 48 > (seconds // 3600) > 23:
-            return '1 day ago'
-        else:
-            # This is at least a day ago.
-            return ' '.join([str(int(seconds // 3600 // 24)), 'days ago'])
+    when = ''
+
+    if seconds // 3600 < 1:
+        # This is less than an hour ago.
+        when = 'Just now'
+    elif seconds // 3600 < 24:
+        # This is less than a day ago.
+        when = ' '.join([str(int(seconds // 3600)), 'hours ago'])
+    elif 48 > (seconds // 3600) > 23:
+        when = '1 day ago'
+    else:
+        # This is at least a day ago.
+        when = ' '.join([str(int(seconds // 3600 // 24)), 'days ago'])
+
+    return when
