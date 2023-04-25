@@ -2,20 +2,26 @@
     This module is the plugin for Last.fm support.  All plugins, at a minimum, must have the
     following:
 
-    1. An __init__ mehod that takes config data read by the main program.
+    1. The class must be named TrackPlugin.
 
-    2. A get_tracks method that returns an list of dictionaries containing:
+    2. An __init__ mehod that takes plugin config data read by the main program.
+
+    3. A get_tracks method that returns an list of dictionaries containing:
        a. artist: The artist name
        b. track: The track name
        c. when: How long ago the track was listened to
        d. cover: The url of the album cover
-
-    3. The class must be named TrackPlugin.
 """
 
 import time
 from datetime import datetime
 import pylast
+
+# The number of seconds in an hour.
+HOUR = 3600
+
+# The number of hours in a day.
+DAY = HOUR * 24
 
 class TrackPlugin:
     """ This is the class to implement the Last.fm connector. """
@@ -66,6 +72,7 @@ class TrackPlugin:
         album_cover = ''
 
         try:
+            # Lookup the album cover from Last.fm.
             album = self.conn.get_album(track.track.artist.name, track.album)
             album_cover = album.get_cover_image()
         except pylast.WSError:
@@ -89,16 +96,20 @@ def get_days(track):
 
     when = ''
 
-    if seconds // 3600 < 1:
-        # This is less than an hour ago.
+    if seconds // HOUR < 1:
+        # This was listened to less than an hour ago.
         when = 'Just now'
-    elif seconds // 3600 < 24:
-        # This is less than a day ago.
-        when = ' '.join([str(int(seconds // 3600)), 'hours ago'])
-    elif 48 > (seconds // 3600) > 23:
+    elif seconds // HOUR < 2:
+        # This was listened to around an hour ago.
+        when = '1 hour ago'
+    elif seconds // HOUR < 24:
+        # This was listened to less than a day ago.
+        when = ' '.join([str(int(seconds // HOUR)), 'hours ago'])
+    elif 48 > seconds // HOUR > 23:
+        # This was listened to a day ago.
         when = '1 day ago'
     else:
-        # This is at least a day ago.
-        when = ' '.join([str(int(seconds // 3600 // 24)), 'days ago'])
+        # This was listened to more than a day ago.
+        when = ' '.join([str(int(seconds // DAY)), 'days ago'])
 
     return when

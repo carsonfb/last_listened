@@ -5,31 +5,39 @@
     to an SFTP server.
 """
 
+import os
 import json
 import importlib
 from io import BytesIO
 import requests
 from PIL import Image, ImageDraw, ImageFont
+import pysftp
 
 class LastListened:
     """
         This class is the wrapper for the plugins to look up what the user last listened to.
     """
 
-    header_text = 'Last listened tracks'
+    # The name of the plugin to use to look up the last listened to tracks.
+    plugin_name = None
 
+    # The structures to store the config data in.
     sftp = {}
     image = {}
-    plugin_name = None
     plugins = []
-    tracks = []
 
-    header_font = None
-    font = None
-    sub_font = None
+    # The fonts used by the image creation.
+    fonts = {
+        'header': None,
+        'main': None,
+        'small': None
+    }
 
     def __init__(self):
         """ This method is the constructor for the LastListened class. """
+
+        # The list to store the recently listened to tracks in.
+        self.tracks = []
 
         # Read in the user configuration data.
         self.read_config()
@@ -43,7 +51,7 @@ class LastListened:
     def read_config(self):
         """ The method reads the user's configuration data. """
 
-        with open('.config', 'r') as config_file:
+        with open('.config', 'r', encoding='UTF-8') as config_file:
             # Read in the config file.
             config_data = json.loads(config_file.read())
 
@@ -51,10 +59,12 @@ class LastListened:
             self.image = config_data['image']
             self.plugin_name = config_data['plugin']
             self.plugins = config_data['plugins']
+            self.sftp = config_data['sftp']
 
     def __get_plugin(self):
         """ This method sets up the appropriate plugin. """
 
+        # Dynamically load the plugin.
         track_plugin = getattr(
             importlib.import_module(
                 '.'.join(['plugins', self.plugin_name])
@@ -62,6 +72,7 @@ class LastListened:
             'TrackPlugin'
         )
 
+        # Create a new instance of the track plugin.
         plugin = track_plugin(self.plugins[self.plugin_name])
         plugin.get_tracks()
 
@@ -71,19 +82,19 @@ class LastListened:
         """ This method sets up the fonts used in the image. """
 
         # Setup the font for the header.
-        self.header_font = ImageFont.truetype(
+        self.fonts['header'] = ImageFont.truetype(
             self.image['header']['face'],
             size=self.image['header']['size']
         )
 
         # Setup the font for the first line of the tracks.
-        self.font = ImageFont.truetype(
+        self.fonts['main'] = ImageFont.truetype(
             self.image['font']['face'],
             size=self.image['font']['size']
         )
 
         # Setup the font for the second line of the tracks.
-        self.sub_font = ImageFont.truetype(
+        self.fonts['small'] = ImageFont.truetype(
             self.image['sub_font']['face'],
             size=self.image['sub_font']['size']
         )
@@ -113,16 +124,22 @@ class LastListened:
         """ This method adds the header line to the background. """
 
         # Calculate the center location for the header.
-        center = \
-            (self.image['width'] - self.header_font.getmask(self.header_text).getbbox()[2]) // 2
+        center = self.__get_text_alignment(
+            self.fonts['header'],
+            self.image['header']['text'],
+            'center'
+        )
 
         # Write the centered header to the background.
         draw.text(
             (center, 5),
-            self.header_text,
+            self.image['header']['text'],
             fill=self.image['header']['color'],
-            font=self.header_font
+            font=self.fonts['header']
         )
+
+        # Return the header padding.
+        return get_text_height(self.fonts['header'], self.image['header']['text'], 20)
 
     def __write_track(self, img, draw, track, row_y):
         """ This method writes the track information to the image. """
@@ -133,39 +150,41 @@ class LastListened:
         # Fill in the album art image or the default image.
         img.paste(include, (5, row_y))
 
-        # Calculate how far below the line the text goes.
-        _, descent = self.font.getmetrics()
-
         # Write the first line of track information to the image with padding for the cover art.
-        draw.text((50, row_y), track['track'], fill=self.image['font']['color'], font=self.font)
+        draw.text(
+            (self.image['cover_size'] + 10, row_y),
+            track['track'],
+            fill=self.image['font']['color'],
+            font=self.fonts['main']
+        )
 
         # Caculate how many pixels high the line is and add padding.
-        padding = self.font.getmask(track['track']).getbbox()[3] + descent + 3
+        padding = get_text_height(self.fonts['main'], track['track'], 3)
 
         # Adjust the start pixel for the next line so text doesn't get overwritten.
         row_y += padding
 
         # Write the second line of the track information to the image.
         draw.text(
-            (50, row_y),
+            (self.image['cover_size'] + 10, row_y),
             track['artist'],
             fill=self.image['sub_font']['color'],
-            font=self.sub_font
+            font=self.fonts['small']
         )
 
         # Calculate the right-align position for the last listened time.
-        right = self.image['width'] - self.sub_font.getmask(track['when']).getbbox()[2] - 5
+        right = self.__get_text_alignment(self.fonts['small'], track['when'], 'right', 5)
 
         # Write the last listened time to the image.
         draw.text(
             (right, row_y),
             track['when'],
             fill=self.image['sub_font']['color'],
-            font=self.sub_font
+            font=self.fonts['small']
         )
 
         # Calculate the padding before the start of the next track.
-        row_y += 50 - padding
+        row_y += self.image['cover_size'] + 10 - padding
 
         # Return the new padding.
         return row_y
@@ -175,16 +194,33 @@ class LastListened:
 
         try:
             # Lookup the album cover artwork.
-            cover_art = requests.get(track['cover'])
-            include = Image.open(BytesIO(cover_art.content))
+            cover_art = requests.get(track['cover'], timeout=30)
+            cover_image = Image.open(BytesIO(cover_art.content))
         except requests.exceptions.MissingSchema:
             # There was no cover art so use the default image.
-            include = Image.open('resources/blank.png')
+            cover_image = Image.open('resources/blank.png')
 
-        # Resize the image that was looked up.
-        include = include.resize((self.image['cover_size'], self.image['cover_size']))
+        # Resize the cover art to a square.
+        cover_image = cover_image.resize((self.image['cover_size'], self.image['cover_size']))
 
-        return include
+        return cover_image
+
+    def __get_text_alignment(self, font, text, align, padding=0):
+        """ This function calculates the left edge of the text. """
+
+        pos = 0
+
+        if align == 'right':
+            # The left edge is the width minus the text length and padding.
+            pos = self.image['width'] - font.getmask(text).getbbox()[2] - padding
+        elif align == 'center':
+            # The left edge is half of the width minus the text length.
+            pos = (self.image['width'] - font.getmask(text).getbbox()[2]) // 2
+        else:
+            # The left edge is just the padding.
+            pos = padding
+
+        return pos
 
     def create_image(self):
         """ This method creates the image of the last listened to tracks. """
@@ -193,23 +229,56 @@ class LastListened:
         img, draw = self.__create_background()
 
         # Write the header to the image.
-        self.__write_header(draw)
+        header_padding = self.__write_header(draw)
 
         # Leave room for the header.
-        row_y = 40
+        row_y = header_padding
 
         for track in self.tracks:
             # Write the track to the image.
             row_y = self.__write_track(img, draw, track, row_y)
 
         # Save the image.
-        img.save('last_listened.png')
+        img.save(self.image['file'])
+
+    def copy_image_to_sftp(self):
+        """ This method copies the image file to the SFTP server. """
+
+        if not self.sftp['send']:
+            # The user requested for the file to not be sent.
+            return
+
+        # Setup the SFTP connection.
+        with pysftp.Connection(
+            host=self.sftp['server'],
+            port=self.sftp['port'],
+            username=self.sftp['username'],
+            password=self.sftp['password']
+        ) as conn:
+            # Copy the local file to the SFTP server.
+            conn.put(self.image['file'], '/'.join([self.sftp['path'], self.image['file']]))
+
+        # Remove the temporary file.
+        os.remove(self.image['file'])
+
+def get_text_height(font, text, extra_space):
+    """ This function calculates text height based on the font and the actual text. """
+
+    # Calculate how far below the line the text goes.
+    _, descent = font.getmetrics()
+
+    # Calculate the text height.
+    padding = font.getmask(text).getbbox()[3] + descent + extra_space
+
+    return padding
 
 def main():
     """ This is the main function of the program. """
 
     last_listened = LastListened()
     last_listened.create_image()
+    last_listened.copy_image_to_sftp()
 
 if __name__ == '__main__':
+    # Run the entry point if the script was executed from the command line.
     main()

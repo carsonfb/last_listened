@@ -1,0 +1,43 @@
+{
+    "plugin": "lastfm",
+    "plugins": {
+        "lastfm": {
+            "api_key": "This is your API key",
+            "api_secret": "This is your API secret",
+            "username": "This is your Last.fm username",
+            "password": "This is your Last.fm password",
+            "limit": 5
+        }
+    },
+    "sftp": {
+        "send": 1,
+        "server": "This is your SFTP server's address",
+        "port": 22,
+        "username": "This is your SFTP username",
+        "password": "This is your SFTP password",
+        "path": "This is your SFTP path"
+    },
+    "image": {
+        "background": "#272727",
+        "width": 350,
+        "height": 290,
+        "cover_size": 40,
+        "header": {
+            "size": 20,
+            "face": "Arial_Bold.ttf",
+            "color": "#B00000",
+            "text": "Last listened tracks"
+        },
+        "font": {
+            "size": 11,
+            "face": "Arial_Bold.ttf",
+            "color": "#FFFFFF"
+        },
+        "sub_font": {
+            "size": 11,
+            "face": "arial.ttf",
+            "color": "#A0A0A0"
+        },
+        "file": "last_listened.png"
+    }
+}
