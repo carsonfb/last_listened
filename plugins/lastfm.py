@@ -37,13 +37,14 @@ class TrackPlugin:
     def get_tracks(self):
         """ This metod looks up the user's most recently listened to tracks. """
 
-        # TODO: Make the limit a parameter in the config.
         # Lookup the most recent tracks.
-        recent_tracks = self.conn.get_user(self.config_data['username']).get_recent_tracks(limit=5)
+        recent_tracks = self.conn.get_user(self.config_data['username']).get_recent_tracks(
+            limit=self.config_data['limit']
+        )
 
         for track in recent_tracks:
             # Lookup the album cover for each track.
-            album_cover = self.__get_artwork(track)
+            album_cover = self.get_artwork(track)
 
             # Push the information onto the track list.
             self.tracks.append(
@@ -54,7 +55,7 @@ class TrackPlugin:
                 }
             )
 
-    def __get_artwork(self, track):
+    def get_artwork(self, track):
         """ This method loooks up the cover artwok for the album. """
 
         # Default to a blank image.
