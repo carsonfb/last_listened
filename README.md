@@ -15,7 +15,7 @@ plugins will be added if I have time, or if any are user-contributed.
 * Where the last played songs are pulled from can be customized via plugins written in python (see
 below).
 
-The below image is updated every 5 minutes.
+The below image is an example export from Last Listened.
 
 ![image of an example output from Last Listened](https://carson.ballweb.org/images/last_listened.png)
 
