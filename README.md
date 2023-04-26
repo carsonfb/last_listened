@@ -76,7 +76,7 @@ If you like this project and want to see more projects from me, please contribut
 
 Webull affiliate link: https://a.webull.com/8XVE5sOKtu1sPAStxw
 
-Robinhood affiliate link: join.robinhood.com/carsonb453
+Robinhood affiliate link: [join.robinhood.com/carsonb453](join.robinhood.com/carsonb453)
 
 License
 -------
