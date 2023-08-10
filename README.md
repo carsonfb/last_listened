@@ -15,6 +15,8 @@ plugins will be added if I have time, or if any are user-contributed.
 * Where the last played songs are pulled from can be customized via plugins written in python (see
 below).
 
+* If you have pngcrush installed, it can be used to automatically compress the generated image.
+
 The below image is an example export from Last Listened.
 
 ![image of an example output from Last Listened](https://carson.ballweb.org/images/last_listened.png)
