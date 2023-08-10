@@ -39,5 +39,8 @@
             "color": "#A0A0A0"
         },
         "file": "last_listened.png"
+    },
+    "pngcrush": {
+        "location": "This is the full path to pngcrush"
     }
 }

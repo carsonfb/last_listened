@@ -60,6 +60,12 @@ class LastListened:
             self.plugin_name = config_data['plugin']
             self.plugins = config_data['plugins']
             self.sftp = config_data['sftp']
+            self.pngcrush = None
+
+
+            if 'pngcrush' in config_data:
+                if 'location' in config_data['pngcrush']:
+                    self.pngcrush = config_data['pngcrush']['location']
 
     def __get_plugin(self):
         """ This method sets up the appropriate plugin. """
@@ -241,6 +247,25 @@ class LastListened:
         # Save the image.
         img.save(self.image['file'])
 
+    def compress_image(self):
+        """
+            This method compresses the PNG to improve website loading times.  In testing, this
+            yielded around a 30% size reduction.
+        """
+
+        if self.pngcrush:
+            # The user requested that the image be compressed.
+
+            # Compress in silent mode to avoid logging each iteration.
+            os.system(
+                ' '.join([
+                    f'{self.pngcrush}',
+                    '-ow -s -brute -reduce',
+                    '-rem gAMA -rem cHRM -rem iCCP -rem sRGB -rem alla -rem text',
+                    f'"{self.image["file"]}"'
+                ])
+            )
+
     def copy_image_to_sftp(self):
         """ This method copies the image file to the SFTP server. """
 
@@ -277,6 +302,7 @@ def main():
 
     last_listened = LastListened()
     last_listened.create_image()
+    last_listened.compress_image()
     last_listened.copy_image_to_sftp()
 
 if __name__ == '__main__':
