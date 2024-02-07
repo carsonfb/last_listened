@@ -4,7 +4,7 @@
 
     1. The class must be named TrackPlugin.
 
-    2. An __init__ mehod that takes plugin config data read by the main program.
+    2. An __init__ method that takes plugin config data read by the main program.
 
     3. A get_tracks method that returns an list of dictionaries containing:
        a. artist: The artist name
