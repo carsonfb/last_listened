@@ -62,7 +62,6 @@ class LastListened:
             self.sftp = config_data['sftp']
             self.pngcrush = None
 
-
             if 'pngcrush' in config_data:
                 if 'location' in config_data['pngcrush']:
                     self.pngcrush = config_data['pngcrush']['location']
